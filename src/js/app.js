@@ -18,6 +18,18 @@ App = {
         App.initWeb3();
     },
 
+    voteOnDog: function(index) {
+        getAccounts().then(function(accounts) {
+            account = accounts[0];
+            return App.contracts.PetContest.deployed();
+        }).then(function(instance) {
+            contestInstance = instance;
+            return contestInstance.voteOnDog(index, {from: account});
+        }).then(function() {
+            App.initializePets();
+        });
+    },
+
     setPetData: function(data) {
         var petsRow = $('#petsRow');
         var petTemplate = $('#petTemplate');
@@ -30,7 +42,10 @@ App = {
             petTemplate.find('.pet-breed').text(data[i].breed);
             petTemplate.find('.pet-age').text(data[i].age);
             petTemplate.find('.pet-location').text(data[i].location);
-            petTemplate.find('.btn-adopt').attr('data-id', data[i].id);
+            petTemplate.find('.pet-votes').text(data[i].votes);
+
+            var voteButton = petTemplate.find('.btn-vote');
+            voteButton.attr('data-id', i);
 
             petsRow.append(petTemplate.html());
         }
@@ -132,6 +147,11 @@ App = {
     bindEvents: function() {
         $('#insert-button').on('click', App.addTestDog);
         $('#clear-button').on('click', App.clearPets);
+        $(document).on('click', '.btn-vote', function() {
+            var id = parseInt($(this).data("id"));
+            console.log("voting on " + id);
+            App.voteOnDog(id);
+        });
     },
 
     addTestDog: function() {
