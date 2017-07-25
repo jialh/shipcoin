@@ -39,11 +39,13 @@ App = {
         App.contracts.PetContest.deployed().then(function(instance) {
             contestInstance = instance;
             return contestInstance.numberOfDogs.call();
-        }).then(function(numberOfDogs) {
+        }).then(function(bigNumberOfDogs) {
             var promises = [];
-            console.log(numberOfDogs, numberOfDogs.toNumber());
-            for (var i = 0; i < numberOfDogs.toNumber(); i++)
+            var numberOfDogs = bigNumberOfDogs.toNumber();
+            console.log(numberOfDogs);
+            for (var i = 0; i < numberOfDogs; i++)
             {
+                console.log(i);
                 var data = {};
                 var promise = contestInstance.getDogName.call(i)
                 .then(function(name) {
@@ -70,7 +72,7 @@ App = {
                 promises.push(promise);
             }
 
-            Promise.all(promises).then(function(data) {
+            return Promise.all(promises).then(function(data) {
                 for (var i = 0; i < data.length; i++) {
                     addPet(data[i]);
                 }

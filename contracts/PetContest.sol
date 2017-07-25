@@ -15,7 +15,7 @@ contract PetContest {
     uint public numberOfDogs;
 
     function insertDog(string name, string pictureUrl, uint age, string breed, string location) {
-        require (numberOfDogs > 15);
+        require (numberOfDogs < 15);
         dogs[numberOfDogs] = Dog(name, pictureUrl, age, breed, location, 0);
         numberOfDogs++;
     }
