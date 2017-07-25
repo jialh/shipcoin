@@ -18,11 +18,13 @@ App = {
         App.initWeb3();
     },
 
-    addPet: function(data) {
+    setPetData: function(data) {
         var petsRow = $('#petsRow');
         var petTemplate = $('#petTemplate');
 
-        for (i = 0; i < data.length; i ++) {
+        petsRow.empty();
+
+        for (i = 0; i < data.length; i++) {
             petTemplate.find('.panel-title').text(data[i].name);
             petTemplate.find('img').attr('src', data[i].picture);
             petTemplate.find('.pet-breed').text(data[i].breed);
@@ -34,48 +36,65 @@ App = {
         }
     },
 
+    clearPets: function() {
+        var contestInstance;
+        var account;
+        getAccounts().then(function(accounts) {
+            account = accounts[0];
+            return App.contracts.PetContest.deployed();
+        }).then(function(instance) {
+            contestInstance = instance;
+            return contestInstance.resetContest({from: account});
+        }).then(function() {
+            App.setPetData([]);
+        });
+    },
+
     initializePets: function() {
         var contestInstance;
-        App.contracts.PetContest.deployed().then(function(instance) {
+        var account;
+        getAccounts().then(function(accounts) {
+            account = accounts[0];
+            return App.contracts.PetContest.deployed();
+        }).then(function(instance) {
             contestInstance = instance;
             return contestInstance.numberOfDogs.call();
         }).then(function(bigNumberOfDogs) {
             var promises = [];
             var numberOfDogs = bigNumberOfDogs.toNumber();
-            console.log(numberOfDogs);
             for (var i = 0; i < numberOfDogs; i++)
             {
-                console.log(i);
-                var data = {};
-                var promise = contestInstance.getDogName.call(i)
-                .then(function(name) {
-                    console.log(name);
-                    data.name = name;
-                    return contestInstance.getDogPictureUrl.call(i);
-                }).then(function(pictureUrl) {
-                    data.picture = pictureUrl;
-                    return contestInstance.getDogAge.call(i);
-                }).then(function(age) {
-                    data.age = age.toNumber();
-                    return contestInstance.getDogBreed.call(i);
-                }).then(function(breed) {
-                    data.breed = breed;
-                    return contestInstance.getDogLocation.call(i);
-                }).then(function(dogLocation) {
-                    data.location = dogLocation;
-                    return contestInstance.getDogVotes.call(i);
-                }).then(function(dogVotes) {
-                    data.votes = dogVotes.toNumber();
-                    Promise.resolve(data);
-                });
+                var promise = (function() {
+                    var index = i;
+                    var data = {};
+                    var promise = contestInstance.getDogName.call(index)
+                        .then(function(name) {
+                            data.name = name;
+                            return contestInstance.getDogPictureUrl.call(index);
+                        }).then(function(pictureUrl) {
+                            data.picture = pictureUrl;
+                            return contestInstance.getDogAge.call(index);
+                        }).then(function(age) {
+                            data.age = age.toNumber();
+                            return contestInstance.getDogBreed.call(index);
+                        }).then(function(breed) {
+                            data.breed = breed;
+                            return contestInstance.getDogLocation.call(index);
+                        }).then(function(dogLocation) {
+                            data.location = dogLocation;
+                            return contestInstance.getDogVotes.call(index);
+                        }).then(function(dogVotes) {
+                            data.votes = dogVotes.toNumber();
+                            return Promise.resolve(data);
+                        });
+                    return promise;
+                })();
 
                 promises.push(promise);
             }
 
             return Promise.all(promises).then(function(data) {
-                for (var i = 0; i < data.length; i++) {
-                    addPet(data[i]);
-                }
+                App.setPetData(data);
             });
         });
     },
@@ -111,11 +130,12 @@ App = {
     },
 
     bindEvents: function() {
-        $('#test-button').on('click', App.addTestDog);
+        $('#insert-button').on('click', App.addTestDog);
+        $('#clear-button').on('click', App.clearPets);
     },
 
     addTestDog: function() {
-        var pictureUrl = "https://en.wikipedia.org/wiki/Dog#/media/File:Terrier_mixed-breed_dog.jpg";
+        var pictureUrl = "https://upload.wikimedia.org/wikipedia/commons/e/ec/Terrier_mixed-breed_dog.jpg";
 
         var contestInstance;
 
@@ -126,12 +146,12 @@ App = {
             }
 
             var account = accounts[0];
-            console.log(account);
             App.contracts.PetContest.deployed().then(function(instance) {
                 contestInstance = instance;
                 return contestInstance.insertDog("woof", pictureUrl, 3, "terrier", "USA", {from: account});
             }).then(function() {
-                alert("k");
+                App.initializePets();
+                console.log("Finished adding");
             });
         });
     },
