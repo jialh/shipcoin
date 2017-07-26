@@ -24,9 +24,17 @@ App = {
             return App.contracts.PetContest.deployed();
         }).then(function(instance) {
             contestInstance = instance;
+            return contestInstance.getDogSubmitter.call(index);
+        }).then(function(submitter) {
+            if (submitter == account) {
+                throw Error("You cannot vote for your own dog");
+            }
+
             return contestInstance.voteOnDog(index, {from: account});
         }).then(function() {
             App.initializePets();
+        }).catch(function(error) {
+            alert(error.message);
         });
     },
 
@@ -59,9 +67,24 @@ App = {
             return App.contracts.PetContest.deployed();
         }).then(function(instance) {
             contestInstance = instance;
-            return contestInstance.resetContest({from: account});
+            return contestInstance.resetContest();
         }).then(function() {
             App.setPetData([]);
+        });
+    },
+
+    closeContest: function() {
+        var contestInstance;
+        var account;
+        getAccounts().then(function(accounts) {
+            account = accounts[0];
+            return App.contracts.PetContest.deployed();
+        }).then(function(instance) {
+            contestInstance = instance;
+            return contestInstance.closeContest();
+        }).then(function(winnerAddress) {
+            App.setPetData([]);
+            alert(winnerAddress + " won the contest");
         });
     },
 
@@ -147,6 +170,7 @@ App = {
     bindEvents: function() {
         $('#submit').on('click', App.addDog);
         $('#clear-button').on('click', App.clearPets);
+        $('#finish-button').on('click', App.closeContest);
         $(document).on('click', '.btn-vote', function() {
             var id = parseInt($(this).data("id"));
             console.log("voting on " + id);
@@ -172,12 +196,18 @@ App = {
             var account = accounts[0];
             App.contracts.PetContest.deployed().then(function(instance) {
                 contestInstance = instance;
-                return contestInstance.insertDog(dogName, pictureUrl, dogAge, dogBreed, "USA", {from: account});
+                var transaction = {
+                    from: account,
+                    to: instance.address,
+                    value: "5000000000000"
+                };
+
+                return contestInstance.insertDog.sendTransaction(dogName, pictureUrl, dogAge, dogBreed, "USA", transaction);
             }).then(function() {
                 App.initializePets();
                 console.log("Finished adding");
             }).catch(function(err) {
-                console.log(err);
+                alert(err);
             });
         });
     },
