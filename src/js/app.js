@@ -145,7 +145,7 @@ App = {
     },
 
     bindEvents: function() {
-        $('#insert-button').on('click', App.addTestDog);
+        $('#submit').on('click', App.addDog);
         $('#clear-button').on('click', App.clearPets);
         $(document).on('click', '.btn-vote', function() {
             var id = parseInt($(this).data("id"));
@@ -154,7 +154,7 @@ App = {
         });
     },
 
-    addTestDog: function() {
+    addDog: function() {
         var pictureUrl = "https://upload.wikimedia.org/wikipedia/commons/e/ec/Terrier_mixed-breed_dog.jpg";
 
         var contestInstance;
@@ -165,13 +165,19 @@ App = {
                 return;
             }
 
+            var dogName = $('#name').val();
+            var dogBreed = $('#breed').val();
+            var dogAge = parseInt($('#age').val());
+
             var account = accounts[0];
             App.contracts.PetContest.deployed().then(function(instance) {
                 contestInstance = instance;
-                return contestInstance.insertDog("woof", pictureUrl, 3, "terrier", "USA", {from: account});
+                return contestInstance.insertDog(dogName, pictureUrl, dogAge, dogBreed, "USA", {from: account});
             }).then(function() {
                 App.initializePets();
                 console.log("Finished adding");
+            }).catch(function(err) {
+                console.log(err);
             });
         });
     },
